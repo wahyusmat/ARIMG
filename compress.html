@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>ARIMG - Arweave Image Compressor</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+<body>
+
+<nav class="navbar navbar-light" style="background-color: #04b3ff;">
+  <a class="navbar-brand" href="#">ARIMG Compress</a>
+</nav>
+
+<div class="container">
+<br/><br/><br/>
+<h2>ARIMG</h2>
+<div id="app">
+<p>- This tool is used to compress images online</p>
+<div style="background:whitesmoke;padding:10px;">
+	
+	<div class="input-group">
+	  <div class="custom-file" @change="change" @dragover="dragover" @drop="drop">
+		<input type="file" class="custom-file-input" id="file" accept="image/*" ref="input" >
+		<label class="custom-file-label" for="file">Choose JPG/PNG file</label>
+	  </div>
+	 
+	</div>
+	
+</div>
+<br/><br/>
+<div id="gener">
+	<h3>RESULT</h3>
+
+		<div style="background:whitesmoke;padding:20px;border-radius:5px;overflow:hidden;">
+
+			<div style="background:white;padding:10px;max-width:400px;float:left;margin-right:20px;height:200px;margin-bottom:20px;">
+				<p><span class="badge badge-primary">Name</span> <span class="badge badge-light">{{ input.name || 'please choose file' }}</span><br/>
+					<span class="badge badge-primary">File type</span> <span class="badge badge-light">{{ input.type || 'please choose file' }}</span><br/>
+					<span class="badge badge-primary">Last date modified</span> <span class="badge badge-light">{{ input.lastModifiedDate || 'please choose file' }}</span><br/>
+					<span class="badge badge-primary">File size (before)</span> <span class="badge badge-light">{{ input.size | prettySize }}</span> <br/>
+					<span class="badge badge-primary">File size (after)</span> <span class="badge badge-light">{{ output.size | prettySize }}</span> <br/>
+				</p>
+			</div>
+			
+			<div style="float:left;margin-right:20px;margin-bottom:20px;">
+				<img :src="outputURL" :alt="output.name" height="200"/>
+			</div>
+			
+			<div style="text-align:left;width:300px;float:left;margin-bottom:20px;">
+				<a type="button" class="btn btn-success" :download="output.name" :href="outputURL"><i class="fa fa-download"></i> Download Now</a>
+				
+			</div>
+
+		</div>
+	</div>
+</div>
+
+<br/><br/>
+<p>Powered by Arweave | Created by wahyusmat with Love | 2020</p>
+
+</div>
+
+<script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/vue@2/dist/vue.min.js" crossorigin="anonymous"></script>
+  <script src="js/compressor.js"></script>
+  <script src="js/main.js"></script>
+  
+  
+</body>
+</html>
