@@ -6,19 +6,74 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   <title>ARIMG - Arweave Image Compressor</title>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+   <script src="https://unpkg.com/arweave/bundles/web.bundle.js"></script>
+   
+   <style>
+   .button1{
+   width:100%;
+		padding:50px;
+		background-color:white;
+		border: 1px solid black;
+		border-radius:10px;
+   }
+   
+   .containers {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    -moz-transform: translateX(-50%) translateY(-50%);
+    -webkit-transform: translateX(-50%) translateY(-50%);
+    transform: translateX(-50%) translateY(-50%);
+	}
+   </style>
 </head>
 <body>
 
-<nav class="navbar navbar-light" style="background-color: #04b3ff;">
+<div class="containers" id="loading" style="display:none;">
+<div class="spinner-border text-primary" role="status">
+  <span class="sr-only">Loading...</span>
+</div>
+<div class="spinner-border text-danger" role="status">
+  <span class="sr-only">Loading...</span>
+</div>
+</div>
+
+<div class="containers" id="trxsuccess" style="display:none;">
+	<div>
+		<strong>Your image successfully save to blockchain. Please wait after transactions confirmed. :) . Check your transaction at link below.</strong><br/>
+		<span class="badge badge-success" id="linktrx"></span><br/><br/>
+		<button type="button" class="btn btn-dark" onclick="closeaftersuccess()">Close</button>
+	</div>
+</div>
+
+<div class="containers" id="trxfailed" style="display:none;">
+	<div>
+		<strong>FAILED !!! Please upload image before.</strong><br/>
+		<button type="button" class="btn btn-dark" onclick="closeafterfailed()">Close</button>
+	</div>
+</div>
+
+<nav id="navbar" class="navbar navbar-light" style="background-color: #04b3ff;display:none;">
   <a class="navbar-brand" href="#">ARIMG Compress</a>
 </nav>
 
-<div class="container">
+<div class="container" id="container">
 <br/><br/><br/>
 <h2>ARIMG</h2>
-<div id="app">
-<p>- This tool is used to compress images online</p>
+<p>- This tool is used to compress images online<br/>
+- Save image result to Blockchain Arweave</p>
+
+<div id="loginJSON">
+<input type="file" accept=".JSON,.json" id="uploadJSON" onsubmit="openwalletJSON()" style="display: none;"/>
+<center><input type="button" id="file" name="uploadDompet" value="Login with your JSON keyfile" onclick="popupupload()" class="button1"></center>
+</div>
+
+<div id="app" style="display:none;">
+
+<div id="myBalance" style="background-color:whitesmoke;margin-bottom:10px;padding:20px;">
+	<h4><span id="addressar" class="badge badge-primary"></span> <span id="balance" class="badge badge-info"></span></h4>
+</div>
+
 <div style="background:whitesmoke;padding:10px;">
 	
 	<div class="input-group">
@@ -29,10 +84,12 @@
 	 
 	</div>
 	
+
+	
 </div>
 <br/><br/>
 <div id="gener">
-	<h3>RESULT</h3>
+	<h3>Result</h3>
 
 		<div style="background:whitesmoke;padding:20px;border-radius:5px;overflow:hidden;">
 
@@ -40,7 +97,7 @@
 				<p><span class="badge badge-primary">Name</span> <span class="badge badge-light">{{ input.name || 'please choose file' }}</span><br/>
 					<span class="badge badge-primary">File type</span> <span class="badge badge-light">{{ input.type || 'please choose file' }}</span><br/>
 					<span class="badge badge-primary">Last date modified</span> <span class="badge badge-light">{{ input.lastModifiedDate || 'please choose file' }}</span><br/>
-					<span class="badge badge-primary">File size (before)</span> <span class="badge badge-light">{{ input.size | prettySize }}</span> <br/>
+					<span class="badge badge-primary">File size (before)</span> <span class="badge badge-light" id="checkin">{{ input.size | prettySize }}</span> <br/>
 					<span class="badge badge-primary">File size (after)</span> <span class="badge badge-light">{{ output.size | prettySize }}</span> <br/>
 				</p>
 			</div>
@@ -50,18 +107,217 @@
 			</div>
 			
 			<div style="text-align:left;width:300px;float:left;margin-bottom:20px;">
-				<a type="button" class="btn btn-success" :download="output.name" :href="outputURL"><i class="fa fa-download"></i> Download Now</a>
+				<a type="button" class="btn btn-success" :download="output.name" :href="outputURL" id="imageblob"><i class="fa fa-download"></i> Download Now</a>
+				<button type="button" class="btn btn-dark" onclick="sendToBlockchain()" id="savear">Save to Blockchain Arweave</button>
 				
 			</div>
 
 		</div>
 	</div>
+	
+<br/><br/>
+	<h3>Images Saved to Blockchain</h3>
+	<div id="lastTrans" style="background:whitesmoke;padding:20px;">
+	
+	</div>
+	
+	
 </div>
 
+
+
+
 <br/><br/>
+
+
 <p>Powered by Arweave | Created by wahyusmat with Love | 2020</p>
 
 </div>
+
+<script>
+
+
+const arweave = Arweave.init({host:"arweave.net",port:443,logging:!0,protocol:"https"});
+var jwk;
+var wallet_address;
+var balanceAr;
+
+
+function openwalletJSON() {
+                const input = document.getElementById('uploadJSON');
+                if (input) {
+                    input.addEventListener('change', function () {
+                        const reader = new FileReader();
+                        reader.addEventListener('load', function(e) {
+                            jwk = e.target.result;
+                        });
+                        reader.onload = function() {
+                           
+                            jwk = JSON.parse(jwk);
+                            arweave.wallets.jwkToAddress(jwk).then((address) => {
+                                wallet_address = address;
+								document.getElementById("addressar").innerText=wallet_address;
+                                arweave.wallets.getBalance(wallet_address).then((balance) => {
+                                    try {
+                                        let wallet_balance = arweave.ar.winstonToAr(balance);
+										document.getElementById('app').style.display = 'block';
+										document.getElementById('loginJSON').style.display = 'none';
+										
+									
+                                        var bvx = arweave.ar.winstonToAr(balance);
+										balanceAr = arweave.ar.winstonToAr(balance);
+										document.getElementById("balance").innerText=bvx+" AR";
+										
+										lastTrans(wallet_address);
+                                        
+                                    } catch(err) {
+                                        console.log(err);
+                                    }
+
+                                });
+                            });
+                        }
+                        reader.readAsText(input.files[0]);
+
+                    }, false);
+                }
+}
+
+function popupupload () {
+                
+                $("#uploadJSON").click();
+                openwalletJSON();
+}
+
+
+
+
+function sendToBlockchain(){
+
+	
+	
+	var imageBlobcek = document.getElementById("imageblob").getAttribute("href");
+	var imageBloba = imageBlobcek.substring(0,4);
+	console.log(imageBloba);
+	
+	if(imageBloba === 'blob'){
+		document.getElementById('loading').style.display = 'block';
+	    document.getElementById('container').style.display = 'none';
+		
+		var imageBlob = document.getElementById("imageblob").getAttribute("href");
+		toDataURL(imageBlob, function(dataURL){
+		sendToBlockchainNext(dataURL);
+		console.log(dataURL);
+		
+		});
+		
+	}else{
+		document.getElementById('trxfailed').style.display = 'block';
+	    document.getElementById('container').style.display = 'none';
+	}
+	
+
+
+
+}
+
+
+
+
+async function sendToBlockchainNext(ees){
+
+ 
+ let transaction =  await arweave.createTransaction({
+          data: ees
+      }, jwk)
+      transaction.addTag('Content-Type', 'text/html');
+      transaction.addTag('app-name', 'imgarcompress');
+      await arweave.transactions.sign(transaction,jwk);
+	  const response = await arweave.transactions.post(transaction);
+	  
+	  console.log(response);
+	  console.log(transaction.id);
+	  
+	  document.getElementById("linktrx").innerText="https://viewblock.io/arweave/tx/"+transaction.id;
+	  
+	  document.getElementById('loading').style.display = 'none';
+	  document.getElementById('trxsuccess').style.display = 'block';
+}
+
+
+
+
+
+function toDataURL(src,callback){
+
+	var xhttp = new XMLHttpRequest();
+	
+	xhttp.onload = function(){
+		var fileReader = new FileReader();
+			fileReader.onloadend = function(){
+				callback(fileReader.result);
+			};
+		fileReader.readAsDataURL(xhttp.response);	
+	};
+	
+	xhttp.responseType = 'blob';
+	xhttp.open('GET', src, true);
+	xhttp.send();
+	
+}
+
+async function lastTrans(walletadd){
+
+	 const tx_ids = await arweave.arql({
+              op: "and",
+              expr1: {
+                op: "equals",
+                expr1: "from",
+                expr2: walletadd
+              },
+              expr2: {
+                op: "equals",
+                  expr1: "app-name",
+                  expr2: "imgarcompress"
+                
+              }
+        })
+		
+		console.log(tx_ids);
+		
+		var transac = ''
+		
+		tx_ids.forEach(async function(item){
+		
+				const arweave = Arweave.init({host:"arweave.net",port:443,logging:!0,protocol:"https"});	
+				arweave.transactions.getData(item, {decode: true, string: true}).then(data => {
+				  console.log(data);
+				  
+				  transac += '<a href="https://viewblock.io/arweave/tx/' + item + '"><img height="100" src="' + data + '"/></a><br/>';
+				  document.getElementById("lastTrans").innerHTML = transac;
+				  
+				});
+				
+				
+		
+		});
+}
+
+function closeaftersuccess(){
+
+	 document.getElementById('trxsuccess').style.display = 'none';
+	 document.getElementById('container').style.display = 'block';
+
+}
+
+function closeafterfailed(){
+
+	 document.getElementById('trxfailed').style.display = 'none';
+	 document.getElementById('container').style.display = 'block';
+
+}
+
+</script>
 
 <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" crossorigin="anonymous"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
